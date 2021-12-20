@@ -247,12 +247,12 @@ namespace Step60
       // $\Gamma$.
       unsigned int initial_embedded_refinement = 8;
 
-      // The list of boundary ids where we impose homogeneous Dirichlet boundary
-      // conditions. On the remaining boundary ids (if any), we impose
-      // homogeneous Neumann boundary conditions.
-      // As a default problem we have zero Dirichlet boundary conditions on
+      // The list of boundary ids where we impose (possibly inhomogeneous)
+      // Dirichlet boundary conditions. On the remaining boundary ids (if any),
+      // we impose homogeneous Neumann boundary conditions. As a default problem
+      // we have zero Dirichlet boundary conditions on
       // $\partial \Omega$
-      std::list<types::boundary_id> homogeneous_dirichlet_ids{0, 1, 2, 3};
+      std::list<types::boundary_id> dirichlet_ids{0, 1, 2, 3};
 
       // FiniteElement degree of the embedding space: $V_h(\Omega)$
       unsigned int embedding_space_finite_element_degree = 1;
@@ -364,9 +364,14 @@ namespace Step60
 
     std::unique_ptr<Mapping<dim, spacedim>> embedded_mapping;
 
-    // We do the same thing to specify the value of the function $g$,
-    // which is what we want our solution to be in the embedded space.
+    // We do the same thing to specify the value of the forcing term $f$.
     // In this case the Function is a scalar one.
+    ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
+      embedding_value_function;
+
+    // Then, we specify the value of the function $g$, which is what we want
+    // our solution to be in the embedded space.
+    // Again, in this case the Function is a scalar one.
     ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
       embedded_value_function;
 
@@ -387,7 +392,7 @@ namespace Step60
     AffineConstraints<double> constraints;
 
     Vector<double> solution;
-    Vector<double> rhs;
+    Vector<double> embedding_rhs;
 
     Vector<double> lambda;
     Vector<double> embedded_rhs;
@@ -526,8 +531,7 @@ namespace Step60
     add_parameter("Local refinements steps near embedded domain",
                   delta_refinement);
 
-    add_parameter("Homogeneous Dirichlet boundary ids",
-                  homogeneous_dirichlet_ids);
+    add_parameter("Dirichlet boundary ids", dirichlet_ids);
 
     add_parameter("Use displacement in embedded interface", use_displacement);
 
@@ -556,6 +560,7 @@ namespace Step60
     const Parameters &parameters)
     : parameters(parameters)
     , embedded_configuration_function("Embedded configuration", spacedim)
+    , embedding_value_function("Embedding value")
     , embedded_value_function("Embedded value")
     , schur_solver_control("Schur solver control")
     , monitor(std::cout, TimerOutput::summary, TimerOutput::cpu_and_wall_times)
@@ -580,6 +585,9 @@ namespace Step60
         ParameterAcceptor::prm.set("Function expression",
                                    "R*cos(2*pi*x)+Cx; R*sin(2*pi*x)+Cy");
       });
+
+    embedding_value_function.declare_parameters_call_back.connect(
+      []() -> void { ParameterAcceptor::prm.set("Function expression", "0"); });
 
     embedded_value_function.declare_parameters_call_back.connect(
       []() -> void { ParameterAcceptor::prm.set("Function expression", "1"); });
@@ -829,7 +837,10 @@ namespace Step60
   // We now set up the DoFs of $\Omega$ and $\Gamma$: since they are
   // fundamentally independent (except for the fact that $\Omega$'s mesh is more
   // refined "around"
-  // $\Gamma$) the procedure is standard.
+  // $\Gamma$) the procedure is standard. Note that in our case we'll use
+  // homogeneous Dirichlet boundary conditions on $\partial \Omega$. If they
+  // were not homogeneous, what needs to be changed is only the call to
+  // VectorTools::interpolate_boundary_values
   template <int dim, int spacedim>
   void DistributedLagrangeProblem<dim, spacedim>::setup_embedding_dofs()
   {
@@ -839,7 +850,7 @@ namespace Step60
     space_dh->distribute_dofs(*space_fe);
 
     DoFTools::make_hanging_node_constraints(*space_dh, constraints);
-    for (auto id : parameters.homogeneous_dirichlet_ids)
+    for (auto id : parameters.dirichlet_ids)
       {
         VectorTools::interpolate_boundary_values(
           *space_dh, id, Functions::ZeroFunction<spacedim>(), constraints);
@@ -852,7 +863,7 @@ namespace Step60
     stiffness_sparsity.copy_from(dsp);
     stiffness_matrix.reinit(stiffness_sparsity);
     solution.reinit(space_dh->n_dofs());
-    rhs.reinit(space_dh->n_dofs());
+    embedding_rhs.reinit(space_dh->n_dofs());
 
     deallog << "Embedding dofs: " << space_dh->n_dofs() << std::endl;
   }
@@ -919,6 +930,8 @@ namespace Step60
         *space_dh,
         QGauss<spacedim>(2 * space_fe->degree + 1),
         stiffness_matrix,
+        embedding_value_function,
+        embedding_rhs,
         static_cast<const Function<spacedim> *>(nullptr),
         constraints);
 
@@ -978,9 +991,9 @@ namespace Step60
     SolverCG<Vector<double>> solver_cg(schur_solver_control);
     auto S_inv = inverse_operator(S, solver_cg, PreconditionIdentity());
 
-    lambda = S_inv * embedded_rhs;
+    lambda = S_inv * (C * K_inv * embedding_rhs - embedded_rhs);
 
-    solution = K_inv * Ct * lambda;
+    solution = K_inv * (embedding_rhs - Ct * lambda);
 
     constraints.distribute(solution);
   }
