@@ -375,6 +375,11 @@ namespace Step60
     ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
       embedded_value_function;
 
+    // Finally, the value of the Dirichlet boundary conditions on $\partial
+    // \Omega$ is specified.
+    ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
+      embedding_dirichlet_boundary_function;
+
     // Similarly to what we have done with the Functions::ParsedFunction class,
     // we repeat the same for the ReductionControl class, allowing us to
     // specify all possible stopping criteria for the Schur complement
@@ -562,6 +567,8 @@ namespace Step60
     , embedded_configuration_function("Embedded configuration", spacedim)
     , embedding_value_function("Embedding value")
     , embedded_value_function("Embedded value")
+    , embedding_dirichlet_boundary_function(
+        "Embedding Dirichlet boundary conditions")
     , schur_solver_control("Schur solver control")
     , monitor(std::cout, TimerOutput::summary, TimerOutput::cpu_and_wall_times)
   {
@@ -591,6 +598,9 @@ namespace Step60
 
     embedded_value_function.declare_parameters_call_back.connect(
       []() -> void { ParameterAcceptor::prm.set("Function expression", "1"); });
+
+    embedding_dirichlet_boundary_function.declare_parameters_call_back.connect(
+      []() -> void { ParameterAcceptor::prm.set("Function expression", "0"); });
 
     schur_solver_control.declare_parameters_call_back.connect([]() -> void {
       ParameterAcceptor::prm.set("Max steps", "1000");
@@ -836,11 +846,7 @@ namespace Step60
 
   // We now set up the DoFs of $\Omega$ and $\Gamma$: since they are
   // fundamentally independent (except for the fact that $\Omega$'s mesh is more
-  // refined "around"
-  // $\Gamma$) the procedure is standard. Note that in our case we'll use
-  // homogeneous Dirichlet boundary conditions on $\partial \Omega$. If they
-  // were not homogeneous, what needs to be changed is only the call to
-  // VectorTools::interpolate_boundary_values
+  // refined "around" $\Gamma$) the procedure is standard.
   template <int dim, int spacedim>
   void DistributedLagrangeProblem<dim, spacedim>::setup_embedding_dofs()
   {
@@ -853,7 +859,7 @@ namespace Step60
     for (auto id : parameters.dirichlet_ids)
       {
         VectorTools::interpolate_boundary_values(
-          *space_dh, id, Functions::ZeroFunction<spacedim>(), constraints);
+          *space_dh, id, embedding_dirichlet_boundary_function, constraints);
       }
     constraints.close();
 
