@@ -484,4 +484,5 @@ embedded Triangulation and a shared embedding Triangulation).
 
 However, this strategy is most likely going to be more expensive, since by
 definition the embedding grid is larger than the embedded grid, and it makes
-more sense to distribute the largest of the two grids, maintaining the smallest one shared among all processors.
+more sense to distribute the largest of the two grids, maintaining the smallest
+one shared among all processors.
