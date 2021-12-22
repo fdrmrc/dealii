@@ -607,7 +607,7 @@ namespace Step60
   template <int dim, int spacedim>
   void DistributedLagrangeProblem<dim, spacedim>::setup_grids_and_dofs()
   {
-    TimerOutput::Scope timer_section(monitor, "Setup grids and dofs");
+    TimerOutput::Scope timer_section(monitor, "Setup grids and dofss");
 
     // Initializing $\Omega$: constructing the Triangulation and wrapping it
     // into a `std::unique_ptr` object
