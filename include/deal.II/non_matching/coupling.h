@@ -215,6 +215,27 @@ namespace NonMatching
     const Mapping<dim1, spacedim> &immersed_mapping =
       StaticMappingQ1<dim1, spacedim>::mapping);
 
+      
+  /**
+   * New one 
+   * 
+   */
+
+template <int dim0, int dim1, int spacedim, typename Matrix>
+  void create_coupling_stiffness_matrix(
+    const GridTools::Cache<dim0, spacedim> &              cache,
+    const DoFHandler<dim0, spacedim> &                    space_dh,
+    const DoFHandler<dim1, spacedim> &                    immersed_dh,
+    const Quadrature<dim1> &                              quad,
+    Matrix &                                              matrix,
+    const AffineConstraints<typename Matrix::value_type> &constraints =
+      AffineConstraints<typename Matrix::value_type>(),
+    const ComponentMask &          space_comps    = ComponentMask(),
+    const ComponentMask &          immersed_comps = ComponentMask(),
+    const Mapping<dim1, spacedim> &immersed_mapping =
+      StaticMappingQ1<dim1, spacedim>::mapping);
+       
+
   /**
    * Create a coupling sparsity pattern for non-matching independent grids,
    * using a convolution kernel with compact support of radius epsilon.

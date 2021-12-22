@@ -97,3 +97,22 @@ for (dim0 : DIMENSIONS; dim1 : DIMENSIONS; spacedim : SPACE_DIMENSIONS;
       const ComponentMask &                                 comps1);
 #endif
   }
+
+
+
+for (dim0 : DIMENSIONS; dim1 : DIMENSIONS; spacedim : SPACE_DIMENSIONS;
+     Matrix : SPARSE_MATRICES)
+  {
+#if dim1 <= spacedim && dim0 <= spacedim
+    template void create_coupling_stiffness_matrix(
+      const GridTools::Cache<dim0, spacedim> &     cache,
+      const DoFHandler<dim0, spacedim> &           space_dh,
+      const DoFHandler<dim1, spacedim> &           immersed_dh,
+      const Quadrature<dim1> &                     quad,
+      Matrix &                                     matrix,
+      const AffineConstraints<Matrix::value_type> &constraints,
+      const ComponentMask &                        space_comps,
+      const ComponentMask &                        immersed_comps,
+      const Mapping<dim1, spacedim> &              immersed_mapping);
+#endif
+  }

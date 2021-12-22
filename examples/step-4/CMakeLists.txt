@@ -4,7 +4,7 @@
 
 # Set the name of the project and target:
 SET(TARGET "step-4")
-
+SET(DEAL_II_DIR "/Users/marcofeder/dealii-fork")
 # Declare all source files the target consists of. Here, this is only
 # the one step-X.cc file, but as you expand your project you may wish
 # to add other source files as well. If your project becomes much larger,
