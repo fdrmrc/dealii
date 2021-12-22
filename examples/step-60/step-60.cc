@@ -991,6 +991,7 @@ namespace Step60
     lambda = S_inv * embedded_rhs;
 
     solution = K_inv * Ct * lambda;
+    std::cout << "test" << '\n';
 
     constraints.distribute(solution);
   }
