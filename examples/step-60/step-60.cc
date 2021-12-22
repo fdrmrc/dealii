@@ -370,6 +370,11 @@ namespace Step60
     ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
       embedded_value_function;
 
+    // Finally, the value of the Dirichlet boundary conditions on $\partial
+    // \Omega$ is specified.
+    ParameterAcceptorProxy<Functions::ParsedFunction<spacedim>>
+      embedding_dirichlet_boundary_function;
+
     // Similarly to what we have done with the Functions::ParsedFunction class,
     // we repeat the same for the ReductionControl class, allowing us to
     // specify all possible stopping criteria for the Schur complement
@@ -557,6 +562,8 @@ namespace Step60
     : parameters(parameters)
     , embedded_configuration_function("Embedded configuration", spacedim)
     , embedded_value_function("Embedded value")
+    , embedding_dirichlet_boundary_function(
+        "Embedding Dirichlet boundary conditions")
     , schur_solver_control("Schur solver control")
     , monitor(std::cout, TimerOutput::summary, TimerOutput::cpu_and_wall_times)
   {
@@ -583,6 +590,9 @@ namespace Step60
 
     embedded_value_function.declare_parameters_call_back.connect(
       []() -> void { ParameterAcceptor::prm.set("Function expression", "1"); });
+
+    embedding_dirichlet_boundary_function.declare_parameters_call_back.connect(
+      []() -> void { ParameterAcceptor::prm.set("Function expression", "0"); });
 
     schur_solver_control.declare_parameters_call_back.connect([]() -> void {
       ParameterAcceptor::prm.set("Max steps", "1000");
@@ -842,7 +852,7 @@ namespace Step60
     for (auto id : parameters.homogeneous_dirichlet_ids)
       {
         VectorTools::interpolate_boundary_values(
-          *space_dh, id, Functions::ZeroFunction<spacedim>(), constraints);
+          *space_dh, id, embedding_dirichlet_boundary_function, constraints);
       }
     constraints.close();
 
