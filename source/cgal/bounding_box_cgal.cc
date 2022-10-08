@@ -15,77 +15,15 @@
 
 #include <deal.II/cgal/bounding_box_cgal.h>
 
+
+
 DEAL_II_NAMESPACE_OPEN
-
-
-template <typename Kernel>
-class Custom_traits_BBox : public Kernel
-{
-public:
-  Custom_traits_BBox()
-  {}
-  /// The field number type
-  using FT = typename Kernel::FT;
-
-  /// The affine transformation type
-  using Aff_transformation_3 = typename CGAL::Aff_transformation_3<Kernel>;
-
-  // Matrix type
-  using Matrix = FullMatrix<FT>;
-
-  // Vector type
-  // using Vector = Vector<FT>;
-
-public:
-  static Matrix
-  get_Q(const Matrix &m)
-  {
-    QR<Vector<FT>> qr;
-    Vector<FT>     v0(3);
-    v0[0] = m(0, 0);
-    v0[1] = m(1, 0);
-    v0[2] = m(2, 0);
-    Vector<FT> v1(3);
-    v1[0] = m(0, 1);
-    v1[1] = m(1, 1);
-    v1[2] = m(2, 1);
-    Vector<FT> v2(3);
-    v2[0]                      = m(0, 2);
-    v2[1]                      = m(1, 2);
-    v2[2]                      = m(2, 2);
-    [[maybe_unused]] bool   c0 = qr.append_column(v0);
-    [[maybe_unused]] bool   c1 = qr.append_column(v1);
-    [[maybe_unused]] bool   c2 = qr.append_column(v2);
-    std::vector<Vector<FT>> Q(3);
-    Matrix                  Q_matrix(3, 3);
-    for (unsigned int j = 0; j < 3; ++j)
-      {
-        Vector<FT> x(3);
-        x    = 0;
-        x[j] = 1.;
-        Q[j].reinit(3);
-        qr.multiply_with_Q(Q[j], x);
-      }
-
-    for (unsigned int i = 0; i < 3; ++i)
-      {
-        for (unsigned int j = 0; j < 3; ++j)
-          {
-            Q_matrix(i, j) = Q[i][j];
-          }
-      }
-    return Q_matrix;
-  }
-};
-
-
-
 template <int spacedim, typename Number>
 OptimalBoundingBox<spacedim, Number>::OptimalBoundingBox(
   const std::vector<Point<spacedim, Number>> &points)
 {
 #if DEAL_II_CGAL_VERSION_GTE(5, 1, 5)
-  Assert(points.size() > Utilities::pow(2, spacedim),
+  Assert(points.size() == Utilities::pow(2, spacedim),
          ExcMessage("Invalid number of points."));
   Assert(spacedim == 3, ExcNotImplemented("Not implemented in 1D and 2D."));
   using K          = CGAL::Exact_predicates_inexact_constructions_kernel;
