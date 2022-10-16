@@ -39,9 +39,11 @@ OptimalBoundingBox<spacedim, Number>::OptimalBoundingBox(
                      p);
                  });
   Custom_traits_BBox<K> custom_traits;
+  std::cout << "Pre crezione" << std::endl;
   CGAL::oriented_bounding_box(cgal_pts,
                               cgal_out_pts,
                               CGAL::parameters::geom_traits(custom_traits));
+  std::cout << "Post crezione" << std::endl;
   std::transform(cgal_out_pts.begin(),
                  cgal_out_pts.end(),
                  extreme_pts.begin(),
