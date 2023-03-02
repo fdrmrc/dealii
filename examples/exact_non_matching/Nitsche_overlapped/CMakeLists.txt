@@ -19,7 +19,7 @@ SET(TARGET_SRC
   ${TARGET}.cc
 )
 
-SET(DEAL_II_DIR "/workspace/dealii/build")
+SET(DEAL_II_DIR "/Users/marcofeder/build_master_with_CGAL/")
 
 # Usually, you will not need to modify anything beyond this point...
 CMAKE_MINIMUM_REQUIRED(VERSION 3.3.0)
