@@ -594,6 +594,37 @@ namespace TrilinosWrappers
           const dealii::LinearAlgebra::distributed::Vector<double> &b) const;
 
     /**
+     * Solve the linear system <tt>A^Tx=b</tt> based on the package set in the
+     * constructor or initialize(). Supported packages are:
+     * <ul>
+     * <li>  "Amesos_Lapack" </li>
+     * <li>  "Amesos_Klu" </li>
+     * <li>  "Amesos_Umfpack" </li>
+     * <li>  "Amesos_Dscpack" </li>
+     * <li>  "Amesos_Mumps" </li>
+     * </ul>
+     * Note the matrix is not refactored during this call.
+     */
+    void
+    Tvmult(MPI::Vector &x, const MPI::Vector &b) const;
+
+    /**
+     * Solve the linear system <tt>A^Tx=b</tt> based on the package set in
+     * initialize() for deal.II's own parallel vectors. Supported packages are:
+     * <ul>
+     * <li>  "Amesos_Lapack" </li>
+     * <li>  "Amesos_Klu" </li>
+     * <li>  "Amesos_Umfpack" </li>
+     * <li>  "Amesos_Dscpack" </li>
+     * <li>  "Amesos_Mumps" </li>
+     * </ul>
+     * Note the matrix is not refactored during this call.
+     */
+    void
+    Tvmult(dealii::LinearAlgebra::distributed::Vector<double>       &x,
+           const dealii::LinearAlgebra::distributed::Vector<double> &b) const;
+
+    /**
      * Solve the linear system <tt>Ax=b</tt>. Creates a factorization of the
      * matrix with the package chosen from the additional data structure and
      * performs the solve. Note that there is no need for a preconditioner

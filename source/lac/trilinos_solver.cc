@@ -684,7 +684,7 @@ namespace TrilinosWrappers
 
     AssertThrow(Factory.Query(additional_data.solver_type.c_str()),
                 ExcMessage(
-                  "You tried to select the solver type <" +
+                  std::string("You tried to select the solver type <") +
                   additional_data.solver_type +
                   "> but this solver is not supported by Trilinos either "
                   "because it does not exist, or because Trilinos was not "
@@ -794,6 +794,75 @@ namespace TrilinosWrappers
 
 
   void
+  SolverDirect::Tvmult(MPI::Vector &x, const MPI::Vector &b) const
+  {
+    const int transpose_supported_err = solver->SetUseTranspose(true);
+
+    AssertThrow((transpose_supported_err == 0),
+                ExcNotImplemented("This package does not support transpose."));
+
+    // Assign the empty LHS vector to the Epetra_LinearProblem object
+    linear_problem->SetLHS(&x.trilinos_vector());
+
+    // Assign the RHS vector to the Epetra_LinearProblem object
+    linear_problem->SetRHS(
+      const_cast<Epetra_MultiVector *>(&b.trilinos_vector()));
+
+    // First set whether we want to print the solver information to screen or
+    // not.
+    ConditionalOStream verbose_cout(std::cout,
+                                    additional_data.output_solver_details);
+
+
+    verbose_cout << "Starting solve" << std::endl;
+    int ierr = solver->Solve();
+    AssertThrow(ierr == 0, ExcTrilinosError(ierr));
+
+    // Finally, force the SolverControl object to report convergence
+    solver_control.check(0, 0);
+  }
+
+
+
+  void
+  SolverDirect::Tvmult(
+    dealii::LinearAlgebra::distributed::Vector<double>       &x,
+    const dealii::LinearAlgebra::distributed::Vector<double> &b) const
+  {
+    const int transpose_supported_err = solver->SetUseTranspose(true);
+    AssertThrow((transpose_supported_err == 0),
+                ExcNotImplemented("This package does not support transpose."));
+    Epetra_Vector ep_x(View,
+                       linear_problem->GetOperator()->OperatorDomainMap(),
+                       x.begin());
+    Epetra_Vector ep_b(View,
+                       linear_problem->GetOperator()->OperatorRangeMap(),
+                       const_cast<double *>(b.begin()));
+
+    // Assign the empty LHS vector to the Epetra_LinearProblem object
+    linear_problem->SetLHS(&ep_x);
+
+    // Assign the RHS vector to the Epetra_LinearProblem object
+    linear_problem->SetRHS(&ep_b);
+
+    // First set whether we want to print the solver information to screen or
+    // not.
+    ConditionalOStream verbose_cout(std::cout,
+                                    additional_data.output_solver_details);
+
+    verbose_cout << "Starting solve" << std::endl;
+
+    // Fetch return value of Amesos Solver functions
+    int ierr = solver->Solve();
+    AssertThrow(ierr == 0, ExcTrilinosError(ierr));
+
+    // Finally, force the SolverControl object to report convergence
+    solver_control.check(0, 0);
+  }
+
+
+
+  void
   SolverDirect::do_solve()
   {
     // Fetch return value of Amesos Solver functions
@@ -811,7 +880,7 @@ namespace TrilinosWrappers
 
     AssertThrow(Factory.Query(additional_data.solver_type.c_str()),
                 ExcMessage(
-                  "You tried to select the solver type <" +
+                  std::string("You tried to select the solver type <") +
                   additional_data.solver_type +
                   "> but this solver is not supported by Trilinos either "
                   "because it does not exist, or because Trilinos was not "
